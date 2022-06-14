@@ -3,7 +3,7 @@ from string import ascii_lowercase, ascii_letters, ascii_uppercase, digits, punc
 
 from kivy.properties import ObjectProperty
 
-from objects import Client
+from watten_py.objects import Client
 
 ALL_PASSWORD = ascii_uppercase + ascii_letters + ascii_lowercase + digits + punctuation
 ALL_USERNAME = ascii_uppercase + ascii_letters + ascii_lowercase + digits + "_-."
