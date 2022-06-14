@@ -4,7 +4,7 @@ import uuid
 
 
 class Client:
-    def __init__(self, user_id: uuid.UUID, username: str, email: str):
+    def __init__(self, user_id: uuid.UUID, username: str, email: str = None):
         self.user_id: uuid.UUID = user_id
         self.username = username
         self.email = email
@@ -15,7 +15,7 @@ class Client:
     @classmethod
     def get_user(cls, username: str, password: str):
         dta = None
-        with open("user_data.json", "r") as f:
+        with open("watten_py/user_data.json", "r") as f:
             data = json.load(f)
             user_id = [user_id for user_id in data if data[user_id]["username"] == username]
             try:
@@ -43,32 +43,36 @@ class Client:
                     user = user_lst[times.index(max(times))]
                 except ValueError:
                     return None
-
-                return cls(
-                    user,
-                    data[str(user)]["username"],
-                    data[str(user)]["password"]
-                )
+                try:
+                    return cls(
+                        user,
+                        data[str(user)]["username"],
+                        data[str(user)]["email"]
+                    )
+                except KeyError:
+                    return cls(
+                        user,
+                        data[str(user)]["username"],
+                    )
             except IndexError:
                 return None
 
     @classmethod
-    def new_user(cls, username: str, email: str, password: str):
-        new_user_id = None
-        with open("user_data.json", "r") as f:
+    def new_user(cls, username: str, uuid: uuid.UUID, email: str = None, password: str = None):
+        with open("watten_py/user_data.json", "r") as f:
             data = json.load(f)
             try:
                 _ = [user_id for user_id in data if data[user_id]["username"] == username][0]
                 return f"{username} is already used"
             except IndexError:
                 pass
-            while new_user_id in data or new_user_id is None:
-                new_user_id = uuid.uuid1()
         with open("user_data.json", "w") as f:
-            data[str(new_user_id)] = {"username": username, "email": email, "password": password}
+            if email is None:
+                data[str(uuid)] = {"username": username}
+            data[str(uuid)] = {"username": username, "email": email, "password": password}
             json.dump(data, f, indent=4)
         return cls(
-            new_user_id,
+            uuid,
             username,
             email
         )

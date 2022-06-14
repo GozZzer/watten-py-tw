@@ -35,15 +35,22 @@ class WattenServerApp(App):
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_LOG", user=user)))
             case "REGISTER":
-                user = Client.new_user(data.data["username"], data.data["email"], data.data["password"])
+                user = Client.new_user(data.data["username"], data.data["email"], data.data["password"], data.data["uuid"])
                 if isinstance(user, Client):
                     transport.user = user
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_REG", user=user)))
+            case "DUMMY":
+                user = Client.new_user(data.data["name"], uuid=data.data["uuid"])
+                if isinstance(user, Client):
+                    transport.user = user
+                    transport.btn.text = user.username
+                print(user)
+                transport.write(pickle.dumps(Packet("USER_DUM", user=user)))
         print(data)
 
     def on_connection(self, transport):
-        print(transport)
+        print("connect", transport)
         host = transport.getHost()
         btn = Button(text=f"{host.host}:{host.port}", width=100, size_hint=(None, 0.15))
         transport.btn = btn
@@ -52,7 +59,7 @@ class WattenServerApp(App):
 
     def on_disconnection(self, transport):
         self.layout.remove_widget(transport.btn)
-        print(transport)
+        print("disconnect", transport)
 
 
 if __name__ == '__main__':

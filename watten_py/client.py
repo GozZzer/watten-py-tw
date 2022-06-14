@@ -9,9 +9,11 @@ from kivy.graphics import Color, Rectangle
 from kivy.input.providers.mouse import MouseMotionEvent
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.textinput import TextInput
 
 from watten_py.objects import Client, Packet
 from watten_py.tools import check_password, check_username
@@ -29,6 +31,7 @@ class MainScreen(Screen):
     self_cards = ObjectProperty()
     started: bool = False
     clicked_card: ObjectProperty | None = None
+    dummy_popup: Popup
 
     def update_field(self):
         if self.started is True:
@@ -56,9 +59,25 @@ class MainScreen(Screen):
             self.self_cards.add_widget(card)
 
     def start_game(self):
+        app = App.get_running_app()
+        if app.user is None:
+            content = BoxLayout(orientation="vertical")
+            content.add_widget(Label(text="Username: "))
+            username = TextInput(multiline=False)
+            username.bind(on_text_validate=self.save_dummy_name_user)
+            content.add_widget(username)
+            self.dummy_popup = Popup(title="Dummy Name", content=content,
+                                size_hint=(None, None), size=(dp(400), dp(400)))
+            self.dummy_popup.open()
         self.started = True
-        self.update_field()
-        self.draw_cards()
+        #self.update_field()
+        #self.draw_cards()
+
+    def save_dummy_name_user(self, object):
+        app = App.get_running_app()
+        node = uuid.uuid1()
+        app.send(Packet(task_type="DUMMY", name=object.text, uuid=node))
+        self.dummy_popup.dismiss()
 
 
 class ProfileScreen(Screen):
@@ -78,8 +97,6 @@ class ProfileScreen(Screen):
         self.account_name.text = "None"
         self.manager.current = "plogin"
         self.manager.transition.direction = "left"
-
-    pass
 
 
 class ProfileLoginScreen(Screen):
@@ -145,7 +162,8 @@ class RegisterScreen(Screen):
 
     def register(self):
         app: WattenApp = App.get_running_app()
-        app.send(Packet(task_type="REGISTER", username=self.username.text, email=self.email.text, password=self.password.text))
+        uid = uuid.uuid1()
+        app.send(Packet(task_type="REGISTER", username=self.username.text, email=self.email.text, password=self.password.text, uuid=uid))
 
 
 class WattenApp(App):
@@ -202,6 +220,16 @@ class WattenApp(App):
                 self.manager.current = "login"
                 self.manager.transition.direction = "right"
                 registered_popup = Popup(title="Successfully Registered", content=Label(text="You have been registered"),
+                                         size_hint=(None, None), size=(dp(400), dp(400)))
+                registered_popup.open()
+            case "USER_DUM":
+                if not isinstance(data.data["user"], Client):
+                    username_popup = Popup(title="Username Error", content=Label(text="Username already in use"),
+                                           size_hint=(None, None), size=(dp(400), dp(400)))
+                    username_popup.open()
+                    return
+                self.user = data.data["user"]
+                registered_popup = Popup(title="Successful", content=Label(text="You are now temporarily named as " + self.user.username),
                                          size_hint=(None, None), size=(dp(400), dp(400)))
                 registered_popup.open()
 
