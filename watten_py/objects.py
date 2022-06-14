@@ -1,7 +1,5 @@
 import datetime
 import json
-import pickle
-import socket
 import uuid
 
 
@@ -36,7 +34,7 @@ class Client:
 
     @classmethod
     def get_user_by_node(cls, node):
-        with open("user_data.json", "r") as f:
+        with open("watten_py/user_data.json", "r") as f:
             data = json.load(f)
             try:
                 user_lst = [uuid.UUID(uid) for uid in data if uuid.UUID(uid).fields[5] == node]
