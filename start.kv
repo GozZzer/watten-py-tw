@@ -1,0 +1,44 @@
+<Login>
+    username: user_name.text
+    password: password.text
+    button: btn
+    GridLayout:
+        cols: 1
+        size: root.width, root.height
+        GridLayout:
+            cols: 2
+            Label:
+                text: "Benutzername"
+                font_size: 30
+            TextInput:
+                id: user_name
+                font_size: 30
+                multiline: False
+            Label:
+                text: "Password"
+                font_size: 30
+            TextInput:
+                id: password
+                font_size: 30
+                multiline: False
+                password: True
+        Button:
+            id: btn
+            text: "anmelden"
+            font_size: 30
+            size_hint: (1.,0.5)
+            on_release:
+                root.login_popup()
+
+<MainWindow>
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text: "Main Window"
+            font_size: 30
+        Button:
+            text: "Back"
+            font_size: 30
+            on_release:
+                root.manager.current = "login"
+                root.manager.transition.direction = "right"

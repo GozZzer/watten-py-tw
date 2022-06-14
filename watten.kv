@@ -1,0 +1,192 @@
+<MainScreen>
+    field: field
+    play_button: play_button
+    self_field: self_field
+    self_cards: self_cards
+    canvas:
+        Color:
+            rgba: .2118, .349, .2078, 1
+        Rectangle:
+            pos: self.pos  # incorrect
+            size: self.size
+    background_color: (0, 0, 0, 1.)
+    BoxLayout:
+        orientation: "vertical"
+        Widget:
+            id: field
+            BoxLayout:
+                id: self_field
+                orientation: "horizontal"
+                size_hint: None, None
+                size: 700, 100
+                pos: root.width/2 - 350, 100
+                Label:
+                    text: "Profile"
+                BoxLayout:
+                    id: self_cards
+                    size_hint: 2, 1
+                Label:
+                    text: "Status"
+
+
+        BoxLayout:
+            size_hint: 1, None
+            height: 100
+            orientation: "horizontal"
+            background_color: (0, 0, 1., 1.)
+            Button:
+                text: "Profile"
+                background_color: (0, 0, 1., 1.)
+                size_hint : (.1, .5)
+                on_release:
+                    root.manager.current = "profile"
+                    root.manager.transition.direction = "right"
+            Button:
+                id: play_button
+                text: "New Game"
+                font_size: 30
+                opacity: .5
+                on_release:
+                    root.start_game()
+
+            Button:
+                text: "Settings"
+                background_color: (0, 0, 1., 1.)
+                size_hint: (.1, .5)
+                on_release:
+                    root.started = not root.started
+                    root.update_field()
+
+
+<ProfileScreen>
+    account_name: account_name
+    on_pre_enter:
+        self.enter()
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            id: account_name
+            text: "Account:"
+        Button:
+            text: "Logout"
+            on_release:
+                root.logout()
+        Button:
+            text: "Back"
+            on_release:
+                root.manager.current = "main"
+                root.manager.transition.direction = "left"
+
+
+<ProfileLoginScreen>
+    BoxLayout:
+        orientation: "horizontal"
+        Button:
+            text: "Back"
+            on_release:
+                root.manager.current = "main"
+                root.manager.transition.direction = "left"
+        Button:
+            text: "Login"
+            on_release:
+                root.manager.current = "login"
+                root.manager.transition.direction = "left"
+        Button:
+            text: "Register"
+            on_release:
+                root.manager.current = "register"
+                root.manager.transition.direction = "left"
+
+
+<SettingsScreen>
+    Button:
+        on_release:
+            root.manager.current = "main"
+            root.manager.transition.direction = "right"
+
+
+<LoginScreen>
+    username: username
+    password: password
+    GridLayout:
+        rows: 3
+        cols: 2
+        Label:
+            text: "Username"
+        TextInput:
+            padding: 5, 5, 5, 5
+            id: username
+            multiline: False
+            write_tab: False
+            on_text_validate:
+                root.password.focus = True
+        Label:
+            text: "Password"
+        TextInput:
+            id: password
+            multiline: False
+            password: True
+            write_tab: False
+            on_text_validate:
+                root.login()
+        Button:
+            text: "Back"
+            on_release:
+                root.manager.current = "profile"
+                root.manager.transition.direction = "right"
+        Button:
+            text: "Login"
+            on_release:
+                root.login()
+
+<RegisterScreen>
+    username: username
+    email: email
+    password: password
+    c_password: c_password
+    GridLayout:
+        rows: 5
+        cols: 2
+        Label:
+            text: "Username"
+        TextInput:
+            id: username
+            multiline: False
+            write_tab: False
+            on_text_validate:
+                root.email.focus = True
+        Label:
+            text: "Email"
+        TextInput:
+            id: email
+            multiline: False
+            write_tab: False
+            on_text_validate:
+                root.password.focus = True
+        Label:
+            text: "Password"
+        TextInput:
+            id: password
+            multiline: False
+            write_tab: False
+            password: True
+            on_text_validate:
+                root.v_password.focus = True
+        Label:
+            text: "Confirm Password"
+        TextInput:
+            id: c_password
+            multiline: False
+            write_tab: False
+            password: True
+            on_text_validate:
+                root.register()
+        Button:
+            text: "Back"
+            on_release:
+                root.manager.current = "profile"
+                root.manager.transition.direction = "right"
+        Button:
+            text: "Register"
+            on_release:
+                root.register()
