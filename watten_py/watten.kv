@@ -43,11 +43,11 @@
                     root.manager.transition.direction = "right"
             Button:
                 id: play_button
-                text: "New Game"
+                text: "Ready"
                 font_size: 30
                 opacity: .5
                 on_release:
-                    root.start_game()
+                    root.ready()
 
             Button:
                 text: "Settings"
@@ -108,6 +108,8 @@
 <LoginScreen>
     username: username
     password: password
+    on_pre_enter:
+        root.username.focus = True
     GridLayout:
         rows: 3
         cols: 2
@@ -144,6 +146,8 @@
     email: email
     password: password
     c_password: c_password
+    on_pre_enter:
+        root.username.focus = True
     GridLayout:
         rows: 5
         cols: 2
