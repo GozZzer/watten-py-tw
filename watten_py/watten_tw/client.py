@@ -4,7 +4,6 @@ from kivy.support import install_twisted_reactor
 
 install_twisted_reactor()
 
-# A Simple Client that send messages to the Echo Server
 from twisted.internet import reactor, protocol
 
 

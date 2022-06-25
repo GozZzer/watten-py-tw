@@ -58,7 +58,7 @@ class MainScreen(Screen):
             card.bind(on_touch_down=self.get_card)
             self.self_cards.add_widget(card)
 
-    def start_game(self):
+    def ready(self):
         app = App.get_running_app()
         if app.user is None:
             content = BoxLayout(orientation="vertical")
@@ -70,8 +70,7 @@ class MainScreen(Screen):
                                 size_hint=(None, None), size=(dp(400), dp(400)))
             self.dummy_popup.open()
         self.started = True
-        #self.update_field()
-        #self.draw_cards()
+        app.send(Packet(task_type="READY"))
 
     def save_dummy_name_user(self, object):
         app = App.get_running_app()
@@ -198,8 +197,7 @@ class WattenApp(App):
                     self.manager.transition.direction = "down"
             case "USER_LOG":
                 if not isinstance(data.data["user"], Client):
-                    login_popup = Popup(title="Invalid Login-data", content=Label(text="Your Login-data is invalid,\nmake sure you entered the correct data."
-                                                                                       "\nOr you are not registered yet."),
+                    login_popup = Popup(title="Login Error", content=Label(text=data.data["user"]),
                                         size_hint=(None, None), size=(dp(400), dp(400)))
                     login_popup.open()
                     return
