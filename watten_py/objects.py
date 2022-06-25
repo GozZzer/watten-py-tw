@@ -78,6 +78,22 @@ class Client:
         )
 
 
+class ServerSideClient(Client):
+    def __init__(self, *args, **kwargs):
+        self.ready: bool = False
+        self.ready_time: datetime.datetime | None = None
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        return f"<ServerSideClient {self.username}, ready={self.ready}>"
+
+    @classmethod
+    def from_Client(cls, client: Client):
+        return cls(
+            **client.__dict__
+        )
+
+
 class Packet:
     def __init__(self, task_type: str, **kwargs):
         self.task_type = task_type
