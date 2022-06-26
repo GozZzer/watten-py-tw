@@ -79,8 +79,6 @@ class MainScreen(Screen):
         app.send(Packet(task_type="DUMMY", name=object.text, uuid=node))
         self.dummy_popup.dismiss()
         self.started = True
-        app.send(Packet(task_type="READY"))
-
 
 
 class ProfileScreen(Screen):
@@ -166,7 +164,7 @@ class RegisterScreen(Screen):
     def register(self):
         app: WattenApp = App.get_running_app()
         uid = uuid.uuid1()
-        app.send(Packet(task_type="REGISTER", username=self.username.text, email=self.email.text, password=self.password.text, uuid=uid))
+        app.send(Packet(task_type="REGISTER", username=self.username.text, email=self.email.text, password=self.password.text, uuid=str(uid)))
 
 
 class WattenApp(App):
@@ -190,7 +188,7 @@ class WattenApp(App):
     def handle_server_data(self, data):
         match data.task_type:
             case "NODE":
-                self.conn.write(pickle.dumps(Packet(task_type="NODE_R", node=uuid.getnode())))
+                self.send(Packet(task_type="NODE_R", node=uuid.getnode()))
             case "USER":
                 if data.data["user"]:
                     self.user = data.data["user"]
@@ -231,6 +229,7 @@ class WattenApp(App):
                     username_popup.open()
                     return
                 self.user = data.data["user"]
+                self.send(Packet(task_type="READY"))
                 registered_popup = Popup(title="Successful", content=Label(text="You are now temporarily named as " + self.user.username),
                                          size_hint=(None, None), size=(dp(400), dp(400)))
                 registered_popup.open()

@@ -2,6 +2,8 @@ import datetime
 import pickle
 
 from kivy.app import App
+from kivy.clock import Clock
+from kivy.properties import partial
 from kivy.uix.button import Button
 from kivy.uix.stacklayout import StackLayout
 
@@ -35,6 +37,7 @@ class WattenServerApp(App):
                 transport.write(pickle.dumps(Packet("USER", user=user)))
             case "LOGOUT":
                 host = transport.getHost()
+                transport.protocol.user = None
                 transport.btn.text = f"{host.host}:{host.port}"
             case "LOGIN":
                 user = Client.get_user(data.data["username"], data.data["password"])
@@ -44,9 +47,7 @@ class WattenServerApp(App):
                         transport.protocol.user = ServerSideClient.from_Client(user)
                         transport.btn.text = user.username
                     else:
-                        print("x")
                         user = "This account is already connected to the server"
-                print(user)
                 transport.write(pickle.dumps(Packet("USER_LOG", user=user)))
             case "REGISTER":
                 user = Client.new_user(data.data["username"], data.data["email"], data.data["password"], data.data["uuid"])
@@ -74,8 +75,17 @@ class WattenServerApp(App):
         if len(ready_players) >= 4:
             ready_players.sort(key=lambda r_pl: r_pl.protocol.user.ready_time)
             game_players = ready_players[:4]
-            print(game_players)
+            # Check if the player who started the game is in the game if not this statement adds him
+            if ready_player.username not in [pl.protocol.user.username for pl in ready_players]:
+                try:
+                    conn = [con for con in self.connections if con.protocol.user.username == ready_player.username][0]
+                    ready_players[3] = conn
+                except IndexError:
+                    pass
+            Clock.schedule_once(partial(self.start_game, ready_players))
 
+    def start_game(self, players: list):
+        pass
 
     def on_connection(self, transport):
         print("connect", transport)
