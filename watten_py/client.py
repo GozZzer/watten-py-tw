@@ -69,14 +69,18 @@ class MainScreen(Screen):
             self.dummy_popup = Popup(title="Dummy Name", content=content,
                                 size_hint=(None, None), size=(dp(400), dp(400)))
             self.dummy_popup.open()
-        self.started = True
-        app.send(Packet(task_type="READY"))
+        else:
+            self.started = True
+            app.send(Packet(task_type="READY"))
 
     def save_dummy_name_user(self, object):
         app = App.get_running_app()
         node = uuid.uuid1()
         app.send(Packet(task_type="DUMMY", name=object.text, uuid=node))
         self.dummy_popup.dismiss()
+        self.started = True
+        app.send(Packet(task_type="READY"))
+
 
 
 class ProfileScreen(Screen):

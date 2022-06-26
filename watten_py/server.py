@@ -41,7 +41,7 @@ class WattenServerApp(App):
                 if isinstance(user, Client):
                     server_user = ServerSideClient.from_Client(user)
                     if server_user.username not in [conn.protocol.user.username for conn in self.connections if conn.protocol.user]:
-                        transport.user = ServerSideClient.from_Client(user)
+                        transport.protocol.user = ServerSideClient.from_Client(user)
                         transport.btn.text = user.username
                     else:
                         print("x")
@@ -51,27 +51,31 @@ class WattenServerApp(App):
             case "REGISTER":
                 user = Client.new_user(data.data["username"], data.data["email"], data.data["password"], data.data["uuid"])
                 if isinstance(user, Client):
-                    transport.user = ServerSideClient.from_Client(user)
+                    transport.protocol.user = ServerSideClient.from_Client(user)
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_REG", user=user)))
             case "DUMMY":
                 user = Client.new_user(data.data["name"], uuid=data.data["uuid"])
                 if isinstance(user, Client):
-                    transport.user = ServerSideClient.from_Client(user)
+                    transport.protocol.user = ServerSideClient.from_Client(user)
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_DUM", user=user)))
             case "READY":
-                print(transport.__dict__)
-                transport.user.ready = not transport.user.ready
-                if transport.user.ready:
-                    transport.user.ready_time = datetime.datetime.now()
-                    self.ask_for_game_start(transport.user)
+                transport.protocol.user.ready = not transport.protocol.user.ready
+                if transport.protocol.user.ready:
+                    print(f"{transport.protocol.user.username} is ready")
+                    transport.protocol.user.ready_time = datetime.datetime.now()
+                    self.ask_for_game_start(transport.protocol.user)
 
-        print(data)
+        # print(data)
 
-    def ask_for_game_start(self, ready_user: ServerSideClient):
-        ready_player = [pl for pl in self.connections if pl.user.ready]
-        print(ready_player)
+    def ask_for_game_start(self, ready_player: ServerSideClient):
+        ready_players = [pl for pl in self.connections if pl.protocol.user.ready]
+        if len(ready_players) >= 4:
+            ready_players.sort(key=lambda r_pl: r_pl.protocol.user.ready_time)
+            game_players = ready_players[:4]
+            print(game_players)
+
 
     def on_connection(self, transport):
         print("connect", transport)
@@ -85,7 +89,10 @@ class WattenServerApp(App):
     def on_disconnection(self, transport):
         self.layout.remove_widget(transport.btn)
         print(transport.btn == self.connections[0].btn)
-        self.connections.pop(self.connections.index([trans for trans in self.connections if transport.btn == self.connections[0].btn][0]))
+        print([trans for trans in self.connections if transport.btn == self.connections[0].btn])
+        connection = [trans for trans in self.connections if transport.btn == self.connections[0].btn]
+        if connection:
+            self.connections.pop(self.connections.index(connection[0]))
         print("disconnect", transport)
 
 
