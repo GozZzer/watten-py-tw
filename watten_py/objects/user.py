@@ -41,8 +41,17 @@ class User:
             return None
 
 
+class UnknownUser:
+    def __init__(self, connection, btn):
+        self.connection = connection
+        self.btn = btn
+        pass
+
+
 class ServerSideUser(User):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, connection, btn, *args, **kwargs):
+        self.connection = connection
+        self.btn = btn
         self.ready: bool = False
         self.ready_time: datetime.datetime | None = None
         super().__init__(*args, **kwargs)
@@ -51,7 +60,12 @@ class ServerSideUser(User):
         return f"<ServerSideClient {self.username}, ready={self.ready}>"
 
     @classmethod
-    def from_Client(cls, client: User):
-        return cls(
-            **client.__dict__
-        )
+    def from_Client(cls, client: User, connection, btn):
+        if client is None:
+            return None
+        else:
+            return cls(
+                connection,
+                btn,
+                **client.__dict__
+            )

@@ -8,8 +8,6 @@ from twisted.internet import reactor, protocol
 
 
 class TwistedServerProtocol(protocol.Protocol):
-    btn = None
-    user = None
 
     def dataReceived(self, data):
         self.factory.app.handle_data(data, self.transport)
