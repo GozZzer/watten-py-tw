@@ -1,5 +1,5 @@
 {
-    "4c191dfe-e5c6-11ec-8e9e-00e04c680960": {
+    "80bede9c-f57d-11ec-8871-00e04c680960": {
         "username": "daniel",
         "email": "danie.pfu@gmail.com",
         "password": "1234"
@@ -13,5 +13,10 @@
         "username": "GozZzer",
         "email": "gozzzer432@gmail.com",
         "password": "1423"
+    },
+    "4c191dfe-e5c6-11ec-8e9e-00e04c680960": {
+        "username": "sebi",
+        "email": "sebi@gmail.com",
+        "password": "1234"
     }
 }

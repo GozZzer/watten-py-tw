@@ -7,17 +7,23 @@ from kivy.properties import partial
 from kivy.uix.button import Button
 from kivy.uix.stacklayout import StackLayout
 
-from watten_py.objects import Packet, Client, ServerSideClient
+from watten_py.objects.game.game import ServerSideSet
+from watten_py.objects.game.player import ServerSidePlayer
+from watten_py.objects.user import User, ServerSideUser
+from watten_py.objects.network import Packet, GamePacket
+from watten_py.objects.database import WattenDatabase
 from watten_py.watten_tw import sr_reactor, TwistedServerFactory
 
 
 class WattenServerApp(App):
-    layout = None
-    factory = None
+    layout: StackLayout
+    factory: TwistedServerFactory
+    database: WattenDatabase
     connections = []
 
     def build(self):
         self.layout = StackLayout()
+        self.database = WattenDatabase()
         self.factory = TwistedServerFactory(self)
         sr_reactor.listenTCP(5643, self.factory)
         return self.layout
@@ -26,9 +32,9 @@ class WattenServerApp(App):
         data = pickle.loads(data)
         match data.task_type:
             case "NODE_R":
-                user = Client.get_user_by_node(data.data["node"])
-                if isinstance(user, Client):
-                    server_user = ServerSideClient.from_Client(user)
+                user = User.get_user_by_node(data.data["node"], self.database)
+                if isinstance(user, User):
+                    server_user = ServerSideUser.from_Client(user)
                     if server_user.username not in [conn.protocol.user.username for conn in self.connections if conn.protocol.user]:
                         transport.protocol.user = server_user
                         transport.btn.text = user.username
@@ -40,25 +46,25 @@ class WattenServerApp(App):
                 transport.protocol.user = None
                 transport.btn.text = f"{host.host}:{host.port}"
             case "LOGIN":
-                user = Client.get_user(data.data["username"], data.data["password"])
-                if isinstance(user, Client):
-                    server_user = ServerSideClient.from_Client(user)
+                user = User.get_user(username=data.data["username"], password=data.data["password"], database=self.database)
+                if isinstance(user, User):
+                    server_user = ServerSideUser.from_Client(user)
                     if server_user.username not in [conn.protocol.user.username for conn in self.connections if conn.protocol.user]:
-                        transport.protocol.user = ServerSideClient.from_Client(user)
+                        transport.protocol.user = ServerSideUser.from_Client(user)
                         transport.btn.text = user.username
                     else:
                         user = "This account is already connected to the server"
                 transport.write(pickle.dumps(Packet("USER_LOG", user=user)))
             case "REGISTER":
-                user = Client.new_user(data.data["username"], data.data["email"], data.data["password"], data.data["uuid"])
-                if isinstance(user, Client):
-                    transport.protocol.user = ServerSideClient.from_Client(user)
+                user = User.new_user(data.data["uuid"], data.data["username"], data.data["email"], data.data["password"], self.database)
+                if isinstance(user, User):
+                    transport.protocol.user = ServerSideUser.from_Client(user)
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_REG", user=user)))
             case "DUMMY":
-                user = Client.new_user(data.data["name"], uuid=data.data["uuid"])
-                if isinstance(user, Client):
-                    transport.protocol.user = ServerSideClient.from_Client(user)
+                user = User.new_user(data.data["uuid"], data.data["name"], "dummy", "", database=self.database, dummy=True)
+                if isinstance(user, User):
+                    transport.protocol.user = ServerSideUser.from_Client(user)
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_DUM", user=user)))
             case "READY":
@@ -70,22 +76,22 @@ class WattenServerApp(App):
 
         # print(data)
 
-    def ask_for_game_start(self, ready_player: ServerSideClient):
+    def ask_for_game_start(self, ready_player: ServerSideUser):
         ready_players = [pl for pl in self.connections if pl.protocol.user.ready]
         if len(ready_players) >= 4:
             ready_players.sort(key=lambda r_pl: r_pl.protocol.user.ready_time)
             game_players = ready_players[:4]
             # Check if the player who started the game is in the game if not this statement adds him
-            if ready_player.username not in [pl.protocol.user.username for pl in ready_players]:
+            if ready_player.username not in [pl.protocol.user.username for pl in game_players]:
                 try:
                     conn = [con for con in self.connections if con.protocol.user.username == ready_player.username][0]
-                    ready_players[3] = conn
+                    game_players[3] = conn
                 except IndexError:
                     pass
-            Clock.schedule_once(partial(self.start_game, ready_players))
+            Clock.schedule_once(partial(self.game, game_players))
 
-    def start_game(self, players: list):
-        pass
+    def game(self, players: list[list[ServerSidePlayer]]):
+        game_set = ServerSideSet.new_set(players, self.database)
 
     def on_connection(self, transport):
         print("connect", transport)

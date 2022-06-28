@@ -15,8 +15,10 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.textinput import TextInput
 
-from watten_py.objects import Client, Packet
-from watten_py.tools import check_password, check_username
+from watten_py.objects.user import User
+from watten_py.objects.network import Packet
+
+from watten_py.tools.account import check_password, check_username
 
 from watten_py.watten_tw import cl_reactor, TwistedClientFactory
 
@@ -198,7 +200,7 @@ class WattenApp(App):
                     self.manager.current = "login"
                     self.manager.transition.direction = "down"
             case "USER_LOG":
-                if not isinstance(data.data["user"], Client):
+                if not isinstance(data.data["user"], User):
                     login_popup = Popup(title="Login Error", content=Label(text=data.data["user"]),
                                         size_hint=(None, None), size=(dp(400), dp(400)))
                     login_popup.open()
@@ -211,7 +213,7 @@ class WattenApp(App):
                 valid_popup.open()
 
             case "USER_REG":
-                if not isinstance(data.data["user"], Client):
+                if not isinstance(data.data["user"], User):
                     username_popup = Popup(title="Invalid Input", content=Label(text=data.data["user"]),
                                            size_hint=(None, None), size=(dp(400), dp(400)))
                     username_popup.open()
@@ -223,7 +225,7 @@ class WattenApp(App):
                                          size_hint=(None, None), size=(dp(400), dp(400)))
                 registered_popup.open()
             case "USER_DUM":
-                if not isinstance(data.data["user"], Client):
+                if not isinstance(data.data["user"], User):
                     username_popup = Popup(title="Username Error", content=Label(text="Username already in use"),
                                            size_hint=(None, None), size=(dp(400), dp(400)))
                     username_popup.open()
