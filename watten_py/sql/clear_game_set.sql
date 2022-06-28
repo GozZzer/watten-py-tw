@@ -1,0 +1,2 @@
+DELETE FROM "GameData";
+DELETE FROM "SetData";
