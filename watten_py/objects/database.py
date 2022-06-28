@@ -30,6 +30,10 @@ class WattenDatabase:
         DATA_LOGIN = (user_id, user_name, email, password, "md5", dummy)
         QUERY_PLAYER = f'INSERT INTO public."PlayerData" (user_id) VALUES (%s)'
         DATA_PLAYER = (user_id, )
+        if dummy:
+            usr = self.get_user(user_name=user_name)
+            return usr if usr else None
+
         if not self.get_user(user_name=user_name) and not self.get_user(email=email):
             with self.connection.cursor() as curs:
                 curs.execute(QUERY_LOGIN, DATA_LOGIN)
@@ -153,12 +157,12 @@ class WattenDatabase:
             return dta if dta else None
 
 
-d = WattenDatabase()
+#d = WattenDatabase()
 """for i in ["abc", "def", "ghi", "jkl"]:
     uid = uuid.uuid1()
     d.new_user(uid, i, f"{i}@gmail.com", i)
     print(uid)"""
-d.new_user(uuid.uuid1(), "GozZzer", "gozzzer432@gmail.com", "1234")
+#d.new_user(uuid.uuid1(), "GozZzer", "gozzzer432@gmail.com", "1234")
 # print(d.get_user(user_id=uuid.UUID("5f9ee3f1-f182-47b8-95a1-0754ebb70650")))
 """print(d.new_set([
     [uuid.UUID("0ed588b5-f658-11ec-8dc8-a2892896fc68"), uuid.UUID("0ed897ad-f658-11ec-9ad5-a2892896fc68")],
@@ -166,4 +170,4 @@ d.new_user(uuid.uuid1(), "GozZzer", "gozzzer432@gmail.com", "1234")
 ]))"""
 # print(d.new_game(1))
 # print(d.get_set(1))
-print(d.get_user(node=uuid.getnode()))
+#print(d.get_user(node=uuid.getnode()))

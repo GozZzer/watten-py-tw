@@ -62,7 +62,8 @@ class WattenServerApp(App):
                     transport.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_REG", user=user)))
             case "DUMMY":
-                user = User.new_user(data.data["uuid"], data.data["name"], "dummy", "", database=self.database, dummy=True)
+                user = User.new_user(data.data["uuid"], data.data["name"], "dummy", "password", self.database, True)
+                print(user)
                 if isinstance(user, User):
                     transport.protocol.user = ServerSideUser.from_Client(user)
                     transport.btn.text = user.username
@@ -77,7 +78,8 @@ class WattenServerApp(App):
         # print(data)
 
     def ask_for_game_start(self, ready_player: ServerSideUser):
-        ready_players = [pl for pl in self.connections if pl.protocol.user.ready]
+        user_connections = [pl for pl in self.connections if pl.protocol.user]
+        ready_players = [pl for pl in user_connections if pl.protocol.user.ready]
         if len(ready_players) >= 4:
             ready_players.sort(key=lambda r_pl: r_pl.protocol.user.ready_time)
             game_players = ready_players[:4]
@@ -88,10 +90,16 @@ class WattenServerApp(App):
                     game_players[3] = conn
                 except IndexError:
                     pass
-            Clock.schedule_once(partial(self.game, game_players))
+            player = []
+            for pl in game_players:
+                player.append(ServerSidePlayer.from_user(pl.protocol.user, self.database, pl))
+                pl.protocol.user.ready = False
+            player = [[player[0], player[2]], [player[1], player[3]]]
+            Clock.schedule_once(partial(self.game, player))
 
-    def game(self, players: list[list[ServerSidePlayer]]):
+    def game(self, players: list[list[ServerSidePlayer]], *args):
         game_set = ServerSideSet.new_set(players, self.database)
+        Clock.schedule_once(partial(game_set.start_set), 0)
 
     def on_connection(self, transport):
         print("connect", transport)

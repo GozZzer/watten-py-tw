@@ -34,6 +34,8 @@ class ServerSideGame:
 
 
 class ServerSideSet:
+    continue_set: bool = True
+
     def __init__(self, set_id: int, player: list[list[ServerSidePlayer]], first_game: ServerSideGame, team1_set_points: DatabaseAttribute, team2_set_points: DatabaseAttribute):
         self.set_id = set_id
         self.team1_set_points = team1_set_points
@@ -42,9 +44,12 @@ class ServerSideSet:
         self.team2 = player[1]
         self.games = [first_game]
 
+    def __repr__(self):
+        return f"<ServerSideSet #{self.set_id} games={len(self.games)}>"
+
     @classmethod
-    def new_set(cls, player:list[list[ServerSidePlayer]], database: WattenDatabase):
-        set_id, game_id = database.new_set([list(map(lambda x: x.user_id, team)) for team in player])
+    def new_set(cls, player: list[list[ServerSidePlayer]], database: WattenDatabase):
+        set_id, game_id = database.new_set([list(map(lambda x: x.user.user_id, team)) for team in player])
         game = ServerSideGame.new_game(game_id, database.connection)
         return cls(
             set_id,
@@ -53,3 +58,7 @@ class ServerSideSet:
             DatabaseAttribute(database.connection, "SetData", "team1_set_points", "set_id=%s", set_id),
             DatabaseAttribute(database.connection, "SetData", "team2_set_points", "set_id=%s", set_id)
         )
+
+    def start_set(self, *args):
+        while self.continue_set:
+            break

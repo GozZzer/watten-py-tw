@@ -14,7 +14,7 @@ class User:
         return f"<Client {self.username}>"
 
     @classmethod
-    def get_user(cls, username: str, password: str, database: WattenDatabase):
+    def get_user(cls, username: str, password: str, database: WattenDatabase, dummy: bool = False):
         usr = database.get_user(user_name=username, password=password)
         if usr:
             return cls(*usr)
@@ -33,7 +33,7 @@ class User:
             return None
 
     @classmethod
-    def new_user(cls, user_id: uuid.UUID, username: str, email: str, password: str, database: WattenDatabase, dummy: bool = False,):
+    def new_user(cls, user_id: uuid.UUID, username: str, email: str, password: str, database: WattenDatabase, dummy: bool = False):
         usr = database.new_user(user_id, username, email, password, dummy)
         if usr:
             return cls(*usr)

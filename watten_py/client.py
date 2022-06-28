@@ -236,6 +236,8 @@ class WattenApp(App):
                                          size_hint=(None, None), size=(dp(400), dp(400)))
                 registered_popup.open()
 
+        print(data)
+
     def build(self):
         sm = ScreenManager()
         sm.add_widget(MainScreen(name="main"))
