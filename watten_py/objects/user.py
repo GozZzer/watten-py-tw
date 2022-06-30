@@ -1,7 +1,9 @@
 import datetime
+import pickle
 import uuid
 
 from watten_py.objects.database import WattenDatabase
+from watten_py.objects.network import GamePacket, Packet
 
 
 class User:
@@ -47,6 +49,9 @@ class UnknownUser:
         self.btn = btn
         pass
 
+    def send(self, packet: Packet | GamePacket):
+        self.connection.write(pickle.dumps)(packet)
+
 
 class ServerSideUser(User):
     def __init__(self, connection, btn, *args, **kwargs):
@@ -60,7 +65,7 @@ class ServerSideUser(User):
         return f"<ServerSideClient {self.username}, ready={self.ready}>"
 
     @classmethod
-    def from_Client(cls, client: User, connection, btn):
+    def from_User(cls, client: User, connection, btn):
         if client is None:
             return None
         else:
@@ -69,3 +74,9 @@ class ServerSideUser(User):
                 btn,
                 **client.__dict__
             )
+
+    def to_User(self):
+        return User(self.user_id, self.username, self.email)
+
+    def send(self, packet: Packet | GamePacket):
+        self.connection.write(pickle.dumps)(packet)

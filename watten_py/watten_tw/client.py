@@ -2,6 +2,8 @@ import pickle
 
 from kivy.support import install_twisted_reactor
 
+from watten_py.objects.network import Packet, GamePacket
+
 install_twisted_reactor()
 
 from twisted.internet import reactor, protocol
@@ -13,8 +15,10 @@ class TwistedClientProtocol(protocol.Protocol):
 
     def dataReceived(self, data):
         data = pickle.loads(data)
-        print(data)
-        self.factory.app.handle_server_data(data)
+        if isinstance(data, Packet):
+            self.factory.app.handle_data(data)
+        elif isinstance(data, GamePacket):
+            self.factory.app.handle_game_data(data)
 
 
 class TwistedClientFactory(protocol.ClientFactory):

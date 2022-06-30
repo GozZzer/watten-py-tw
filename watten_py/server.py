@@ -35,8 +35,7 @@ class WattenServerApp(App):
             case "NODE_R":
                 user = User.get_user_by_node(data.data["node"], self.database)
                 if isinstance(user, User):
-                    print(usr.connection)
-                    server_user = ServerSideUser.from_Client(user, usr.connection, usr.btn)
+                    server_user = ServerSideUser.from_User(user, usr.connection, usr.btn)
                     if server_user.username not in [conn.username for conn in self.connections if isinstance(conn, ServerSideUser)]:
                         server_user.btn.text = server_user.username
                         self.connections[self.connections.index(usr)] = server_user
@@ -50,7 +49,7 @@ class WattenServerApp(App):
             case "LOGIN":
                 user = User.get_user(username=data.data["username"], password=data.data["password"], database=self.database)
                 if isinstance(user, User):
-                    server_user = ServerSideUser.from_Client(user, usr.connection, usr.btn)
+                    server_user = ServerSideUser.from_User(user, usr.connection, usr.btn)
                     if server_user.username not in [conn.username for conn in self.connections if isinstance(conn, ServerSideUser)]:
                         server_user.btn.text = server_user.username
                         self.connections[self.connections.index(usr)] = server_user
@@ -60,13 +59,13 @@ class WattenServerApp(App):
             case "REGISTER":
                 user = User.new_user(data.data["uuid"], data.data["username"], data.data["email"], data.data["password"], self.database)
                 if isinstance(user, User):
-                    self.connections[self.connections.index(usr)] = ServerSideUser.from_Client(user, usr.connection, usr.btn)
+                    self.connections[self.connections.index(usr)] = ServerSideUser.from_User(user, usr.connection, usr.btn)
                     usr.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_REG", user=user)))
             case "DUMMY":
                 user = User.new_user(data.data["uuid"], data.data["name"], "dummy", "password", self.database, True)
                 if isinstance(user, User):
-                    self.connections[self.connections.index(usr)] = ServerSideUser.from_Client(user, usr.connection, usr.btn)
+                    self.connections[self.connections.index(usr)] = ServerSideUser.from_User(user, usr.connection, usr.btn)
                     usr.btn.text = user.username
                 transport.write(pickle.dumps(Packet("USER_DUM", user=user)))
             case "READY":
@@ -80,6 +79,7 @@ class WattenServerApp(App):
         # print(data)
 
     def ask_for_game_start(self, ready_player: ServerSideUser):
+        print(type(pl) for pl in self.connections)
         user_connections = [pl for pl in self.connections if isinstance(pl, ServerSideUser)]
         ready_players = [pl for pl in user_connections if pl.ready]
         if len(ready_players) >= 4:
@@ -94,7 +94,7 @@ class WattenServerApp(App):
                     pass
             player = []
             for pl in game_players:
-                player.append(ServerSidePlayer.from_user(pl, self.database, pl.connection))
+                player.append(ServerSidePlayer.from_ServerSideUser(pl, self.database, pl.connection))
                 pl.ready = False
             player = [[player[0], player[2]], [player[1], player[3]]]
             Clock.schedule_once(partial(self.game, player))

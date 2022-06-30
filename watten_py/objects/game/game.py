@@ -1,6 +1,9 @@
+import pickle
+
 from watten_py.objects.database import WattenDatabase
 from watten_py.objects.game.player import Player, ServerSidePlayer
 from watten_py.objects.game.cards import Card
+from watten_py.objects.network import GamePacket, Packet
 from watten_py.tools.database import DatabaseAttribute
 
 
@@ -38,10 +41,10 @@ class ServerSideSet:
 
     def __init__(self, set_id: int, player: list[list[ServerSidePlayer]], first_game: ServerSideGame, team1_set_points: DatabaseAttribute, team2_set_points: DatabaseAttribute):
         self.set_id = set_id
-        self.team1_set_points = team1_set_points
-        self.team2_set_points = team2_set_points
-        self.team1 = player[0]
-        self.team2 = player[1]
+        self.team1_set_points: DatabaseAttribute = team1_set_points
+        self.team2_set_points: DatabaseAttribute = team2_set_points
+        self.team1: list[ServerSidePlayer] = player[0]
+        self.team2: list[ServerSidePlayer] = player[1]
         self.games = [first_game]
 
     def __repr__(self):
@@ -61,4 +64,15 @@ class ServerSideSet:
 
     def start_set(self, *args):
         while self.continue_set:
-            break
+            self.send_to_set(Packet("GAMESTART", game=self.games[-1]))
+
+    def send_to_set(self, packet: Packet | GamePacket):
+        for pl in self.team1:
+            self.send_to(pl.user.connection, packet)
+
+        for pl in self.team2:
+            self.send_to(pl.user.connection, packet)
+
+    @staticmethod
+    def send_to(connection, packet: Packet | GamePacket):
+        connection.write(pickle.dumps(packet))

@@ -16,7 +16,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.textinput import TextInput
 
 from watten_py.objects.user import User
-from watten_py.objects.network import Packet
+from watten_py.objects.network import Packet, GamePacket
 
 from watten_py.tools.account import check_password, check_username
 
@@ -187,7 +187,7 @@ class WattenApp(App):
         if self.conn:
             self.conn.write(pickle.dumps(data))
 
-    def handle_server_data(self, data):
+    def handle_data(self, data: Packet):
         match data.task_type:
             case "NODE":
                 self.send(Packet(task_type="NODE_R", node=uuid.getnode()))
@@ -237,6 +237,11 @@ class WattenApp(App):
                 registered_popup.open()
 
         print(data)
+
+    def handle_game_data(self, data: GamePacket):
+        match data.task_type:
+            case "GAMESTART":
+                print(data)
 
     def build(self):
         sm = ScreenManager()
