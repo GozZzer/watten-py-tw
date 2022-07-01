@@ -38,7 +38,7 @@ class ServerSideGame:
         )
 
     def to_Game(self, player_dek: list[Card], player: list[list[ServerSidePlayer]]):
-        player = [list(map(lambda p: p.to_player, pl)) for pl in player]
+        player = [list(map(lambda p: p.to_player(), pl)) for pl in player]
         return Game(self.game_id, player, player_dek)
 
 
