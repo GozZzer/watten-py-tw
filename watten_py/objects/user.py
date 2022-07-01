@@ -43,16 +43,6 @@ class User:
             return None
 
 
-class UnknownUser:
-    def __init__(self, connection, btn):
-        self.connection = connection
-        self.btn = btn
-        pass
-
-    def send(self, packet: Packet | GamePacket):
-        self.connection.write(pickle.dumps)(packet)
-
-
 class ServerSideUser(User):
     def __init__(self, connection, btn, *args, **kwargs):
         self.connection = connection

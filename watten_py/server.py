@@ -9,6 +9,7 @@ from kivy.uix.stacklayout import StackLayout
 
 from watten_py.objects.game.game import ServerSideSet
 from watten_py.objects.game.player import ServerSidePlayer
+from watten_py.objects.client import Client
 from watten_py.objects.user import User, ServerSideUser, UnknownUser
 from watten_py.objects.network import Packet
 from watten_py.objects.database import WattenDatabase
@@ -19,7 +20,7 @@ class WattenServerApp(App):
     layout: StackLayout
     factory: TwistedServerFactory
     database: WattenDatabase
-    connections: list[ServerSideUser | UnknownUser] = []
+    connections: list[Client] = []
 
     def build(self):
         self.layout = StackLayout()
@@ -29,7 +30,7 @@ class WattenServerApp(App):
         return self.layout
 
     def handle_data(self, data, transport):
-        usr = self.resolve_user(transport)
+        client = self.resolve_client(transport)
         match data.task_type:
             case "NODE_R":
                 user = User.get_user_by_node(data.data["node"], self.database)
@@ -81,7 +82,7 @@ class WattenServerApp(App):
         usr = self.resolve_user(transport)
 
     def ask_for_game_start(self, ready_player: ServerSideUser):
-        print(type(pl) for pl in self.connections)
+        print([type(pl) for pl in self.connections])
         user_connections = [pl for pl in self.connections if isinstance(pl, ServerSideUser)]
         ready_players = [pl for pl in user_connections if pl.ready]
         if len(ready_players) >= 4:
@@ -107,13 +108,10 @@ class WattenServerApp(App):
 
     def on_connection(self, transport):
         print("connect", transport)
-        host = transport.getHost()
-        btn = Button(text=f"{host.host}:{host.port}", width=100, size_hint=(None, 0.15))
-        usr = UnknownUser(transport, btn)
-        self.connections.append(usr)
+        clnt, btn, user = Client.on_connection(transport)
         self.layout.add_widget(btn)
-        self.connections.append(usr)
-        transport.write(pickle.dumps(Packet("NODE")))
+        self.connections.append(clnt)
+        clnt.send(Packet("NODE"))
 
     def on_disconnection(self, transport):
         user = self.resolve_user(transport)
@@ -123,8 +121,8 @@ class WattenServerApp(App):
             self.connections.pop(self.connections.index(connection[0]))
         print("disconnect", user.connection)
 
-    def resolve_user(self, connection):
-        return [usr for usr in self.connections if usr.connection == connection][0]
+    def resolve_client(self, connection):
+        return [cli for cli in self.connections if cli.connection == connection][0]
 
 
 if __name__ == '__main__':
