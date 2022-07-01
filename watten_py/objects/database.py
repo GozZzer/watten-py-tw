@@ -32,9 +32,10 @@ class WattenDatabase:
         DATA_PLAYER = (user_id, )
         if dummy:
             usr = self.get_user(user_name=user_name)
-            return usr if usr else None
+            if usr:
+                return usr
 
-        if not self.get_user(user_name=user_name) and not self.get_user(email=email):
+        if (not self.get_user(user_name=user_name) and not self.get_user(email=email)) or dummy:
             with self.connection.cursor() as curs:
                 curs.execute(QUERY_LOGIN, DATA_LOGIN)
                 user_dta = curs.fetchone()
@@ -66,6 +67,9 @@ class WattenDatabase:
             else:
                 QUERY += ' and user_id = %s'
             DATA.append(user_id)
+        else:
+            if not user_id and not user_name and not email and not password:
+                return None
         if user_name:
             if QUERY.endswith('" WHERE'):
                 QUERY += ' user_name = %s'

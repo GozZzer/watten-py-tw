@@ -1,9 +1,9 @@
 import datetime
 import pickle
+from functools import partial
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import partial
 from kivy.uix.button import Button
 from kivy.uix.stacklayout import StackLayout
 
@@ -30,7 +30,6 @@ class WattenServerApp(App):
 
     def handle_data(self, data, transport):
         usr = self.resolve_user(transport)
-        data = pickle.loads(data)
         match data.task_type:
             case "NODE_R":
                 user = User.get_user_by_node(data.data["node"], self.database)
@@ -77,6 +76,9 @@ class WattenServerApp(App):
                         self.ask_for_game_start(usr)
 
         # print(data)
+
+    def handle_game_data(self, data, transport):
+        usr = self.resolve_user(transport)
 
     def ask_for_game_start(self, ready_player: ServerSideUser):
         print(type(pl) for pl in self.connections)

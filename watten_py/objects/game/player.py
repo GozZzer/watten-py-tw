@@ -1,10 +1,12 @@
 from watten_py.objects.database import WattenDatabase
 from watten_py.objects.user import User, ServerSideUser
+from watten_py.objects.game.cards import Card
 
 
 class Player:
     games_won: int
     set_won: int
+    cards: list[Card]
 
     def __init__(self, user: User, database: WattenDatabase = None):
         self._user: User = user
@@ -15,7 +17,7 @@ class Player:
 
 
 class ServerSidePlayer(Player):
-    dek: list
+    dek: list[Card]
     game_id: int
 
     def __init__(self, user: ServerSideUser, database: WattenDatabase = None, connection=None):

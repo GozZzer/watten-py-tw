@@ -1,4 +1,7 @@
 from watten_py import WattenClient
 
 client = WattenClient()
-client.run()
+try:
+    client.run()
+except KeyboardInterrupt:
+    client.stop()

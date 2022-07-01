@@ -11,7 +11,7 @@ class Game:
     team1_points: list[int] = []
     team2_points: list[int] = []
 
-    def __init__(self, game_id: int, player: list[Player], own_cards: list[Card]):
+    def __init__(self, game_id: int, player: list[list[Player]], own_cards: list[Card]):
         self.game_id = game_id
         self.player = player
         self.own_cards = own_cards
@@ -20,20 +20,27 @@ class Game:
 
 class ServerSideGame:
     card_dek: list[Card]
-    player_dek: list[list[Card]]
 
-    def __init__(self, game_id: int, team1_points: DatabaseAttribute, team2_points: DatabaseAttribute):
+    def __init__(self, game_id: int, player: list[list[ServerSidePlayer]], team1_points: DatabaseAttribute, team2_points: DatabaseAttribute):
         self.game_id = game_id
+        self.team1_player = player[0]
+        self.team2_player = player[1]
         self.team1_points = team1_points
         self.team2_points = team2_points
 
     @classmethod
-    def new_game(cls, game_id: int, connection):
+    def new_game(cls, game_id: int, player: list[list[ServerSidePlayer]], connection):
         return cls(
             game_id,
+            player,
             DatabaseAttribute(connection, "GameData", "team1_points", "game_id=%s", game_id),
             DatabaseAttribute(connection, "GameData", "team2_points", "game_id=%s", game_id)
         )
+
+    def to_Game(self, player_dek: list[Card], player: list[list[ServerSidePlayer]]):
+        player = [list(map(lambda p: p.to_player, pl)) for pl in player]
+        return Game(self.game_id, player, player_dek)
+
 
 
 class ServerSideSet:
@@ -53,7 +60,7 @@ class ServerSideSet:
     @classmethod
     def new_set(cls, player: list[list[ServerSidePlayer]], database: WattenDatabase):
         set_id, game_id = database.new_set([list(map(lambda x: x.user.user_id, team)) for team in player])
-        game = ServerSideGame.new_game(game_id, database.connection)
+        game = ServerSideGame.new_game(game_id, player, database.connection)
         return cls(
             set_id,
             player,
@@ -75,4 +82,5 @@ class ServerSideSet:
 
     @staticmethod
     def send_to(connection, packet: Packet | GamePacket):
+        print(packet)
         connection.write(pickle.dumps(packet))

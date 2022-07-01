@@ -71,6 +71,7 @@ class MainScreen(Screen):
             self.dummy_popup = Popup(title="Dummy Name", content=content,
                                 size_hint=(None, None), size=(dp(400), dp(400)))
             self.dummy_popup.open()
+            username.focus = True
         else:
             self.started = True
             app.send(Packet(task_type="READY"))
@@ -183,6 +184,10 @@ class WattenApp(App):
         print("Connected")
         self.conn = connection
 
+    def lost_connection(self, connector, reason):
+        self.conn = None
+        self.stop()
+
     def send(self, data: Any):
         if self.conn:
             self.conn.write(pickle.dumps(data))
@@ -197,7 +202,8 @@ class WattenApp(App):
                     self.manager.current = "main"
                     self.manager.transition.direction = "left"
                 else:
-                    self.manager.current = "login"
+                    self.manager.current = "main"
+                    #self.manager.current = "login"###############################################
                     self.manager.transition.direction = "down"
             case "USER_LOG":
                 if not isinstance(data.data["user"], User):
