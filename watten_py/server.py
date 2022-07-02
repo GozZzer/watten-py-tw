@@ -65,7 +65,7 @@ class WattenServerApp(App):
             player = [[game_players[0], game_players[2]], [game_players[1], game_players[3]]]
             Clock.schedule_once(partial(self.game, player))
 
-    def game(self, players: list[list[ServerSidePlayer]], exec_after):
+    def game(self, players: list[list[Client]], exec_after):
         game_set = ServerSideSet.new_set(players, self.database)
         Clock.schedule_once(partial(game_set.start_set), 0)
 

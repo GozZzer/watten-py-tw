@@ -193,7 +193,6 @@ class WattenApp(App):
             self.conn.write(pickle.dumps(data))
 
     def handle_data(self, data: Packet):
-        print("x")
         match data.task_type:
             case "NODE":
                 self.send(UserUpdatePacket(task_type="NODE_R", node=uuid.getnode()))

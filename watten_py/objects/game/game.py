@@ -1,5 +1,6 @@
 import pickle
 
+from watten_py.objects.client import Client
 from watten_py.objects.database import WattenDatabase
 from watten_py.objects.game.player import Player, ServerSidePlayer
 from watten_py.objects.game.cards import Card
@@ -21,7 +22,7 @@ class Game:
 class ServerSideGame:
     card_dek: list[Card]
 
-    def __init__(self, game_id: int, player: list[list[ServerSidePlayer]], team1_points: DatabaseAttribute, team2_points: DatabaseAttribute):
+    def __init__(self, game_id: int, player: list[list[Client]], team1_points: DatabaseAttribute, team2_points: DatabaseAttribute):
         self.game_id = game_id
         self.team1_player = player[0]
         self.team2_player = player[1]
@@ -29,7 +30,7 @@ class ServerSideGame:
         self.team2_points = team2_points
 
     @classmethod
-    def new_game(cls, game_id: int, player: list[list[ServerSidePlayer]], connection):
+    def new_game(cls, game_id: int, player: list[list[Client]], connection):
         return cls(
             game_id,
             player,
@@ -42,23 +43,22 @@ class ServerSideGame:
         return Game(self.game_id, player, player_dek)
 
 
-
 class ServerSideSet:
     continue_set: bool = True
 
-    def __init__(self, set_id: int, player: list[list[ServerSidePlayer]], first_game: ServerSideGame, team1_set_points: DatabaseAttribute, team2_set_points: DatabaseAttribute):
+    def __init__(self, set_id: int, player: list[list[Client]], first_game: ServerSideGame, team1_set_points: DatabaseAttribute, team2_set_points: DatabaseAttribute):
         self.set_id = set_id
         self.team1_set_points: DatabaseAttribute = team1_set_points
         self.team2_set_points: DatabaseAttribute = team2_set_points
-        self.team1: list[ServerSidePlayer] = player[0]
-        self.team2: list[ServerSidePlayer] = player[1]
+        self.team1: list[Client] = player[0]
+        self.team2: list[Client] = player[1]
         self.games = [first_game]
 
     def __repr__(self):
         return f"<ServerSideSet #{self.set_id} games={len(self.games)}>"
 
     @classmethod
-    def new_set(cls, player: list[list[ServerSidePlayer]], database: WattenDatabase):
+    def new_set(cls, player: list[list[Client]], database: WattenDatabase):
         set_id, game_id = database.new_set([list(map(lambda x: x.user.user_id, team)) for team in player])
         game = ServerSideGame.new_game(game_id, player, database.connection)
         return cls(
@@ -74,13 +74,9 @@ class ServerSideSet:
             self.send_to_set(Packet("GAMESTART", game=self.games[-1]))
 
     def send_to_set(self, packet: Packet | GamePacket):
-        for pl in self.team1:
-            self.send_to(pl.user.connection, packet)
-
-        for pl in self.team2:
-            self.send_to(pl.user.connection, packet)
+        for cl in self.team1 + self.team2:
+            self.send_to(cl.connection, packet)
 
     @staticmethod
     def send_to(connection, packet: Packet | GamePacket):
-        print(packet)
         connection.write(pickle.dumps(packet))

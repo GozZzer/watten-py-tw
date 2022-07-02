@@ -15,10 +15,10 @@ class TwistedClientProtocol(protocol.Protocol):
 
     def dataReceived(self, data):
         data = pickle.loads(data)
-        if isinstance(data, Packet):
-            self.factory.app.handle_data(data)
-        elif isinstance(data, GamePacket):
+        if isinstance(data, GamePacket):
             self.factory.app.handle_game_data(data)
+        elif isinstance(data, Packet):
+            self.factory.app.handle_data(data)
 
 
 class TwistedClientFactory(protocol.ClientFactory):
