@@ -1,17 +1,12 @@
-import datetime
-import pickle
 from functools import partial
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.uix.button import Button
 from kivy.uix.stacklayout import StackLayout
 
 from watten_py.objects.game.game import ServerSideSet
-from watten_py.objects.game.player import ServerSidePlayer
 from watten_py.objects.client import Client
-from watten_py.objects.user import User
-from watten_py.objects.network import Packet, UserUpdatePacket
+from watten_py.objects.network import Packet
 from watten_py.objects.database import WattenDatabase
 from watten_py.watten_tw import sr_reactor, TwistedServerFactory
 

@@ -117,8 +117,8 @@ class WattenDatabase:
             curs.execute(QUERY, DATA)
             dta = curs.fetchone()
             if dta:
-                curs.execute('UPDATE public."PlayerData" SET connected_since=now() WHERE user_id=%s RETURNING connected_since', [dta[0]])
-                print(curs.fetchone())
+                curs.execute('UPDATE public."PlayerData" SET connected_since=now() WHERE user_id=%s RETURNING *', [dta[0]])
+                dta = curs.fetchone()
                 self.connection.commit()
                 return dta
             else:

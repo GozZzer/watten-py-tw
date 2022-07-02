@@ -3,7 +3,7 @@ import pickle
 from kivy.uix.button import Button
 
 from watten_py.objects.user import User
-from watten_py.objects.game.player import Player, ServerSidePlayer
+from watten_py.objects.game.player import Player
 from watten_py.objects.network import Packet, GamePacket, UserUpdatePacket
 from watten_py.objects.database import WattenDatabase
 
@@ -13,10 +13,12 @@ class Client:
         self.connection = connection
         self.btn = btn
         self.user: User | None = None
-        self.player: ServerSidePlayer | None = None
-        self._player: Player | None = None
+        self.player: Player | None = None
 
     def __str__(self):
+        return f"<Client connection: {self.connection}>"
+
+    def __repr__(self):
         return f"<Client connection: {self.connection}>"
 
     @classmethod
@@ -61,15 +63,13 @@ class Client:
 
     def ready(self, db: WattenDatabase):
         if self.user:
-            self._player = Player(self.user.user_id, db)
-            self.player = ServerSidePlayer(self.user.user_id, db)
+            self.player = Player(self.user.user_id, db)
             return True
         else:
             return False
 
     def set_done(self):
         self.player = None
-        self._player = None
 
     def send(self, packet: Packet | GamePacket):
         if self.connection:
