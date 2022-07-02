@@ -1,11 +1,11 @@
 class Packet:
     """
-        Packet when something not defined has to be handled
-        Acceptable task_types:
+    Packet when something not defined has to be handled
+    Acceptable task_types:
 
-         - READY: A Client is ready to start a game
-            Additional Data:
-             None
+     - READY: A Client is ready to start a game
+        Additional Data:
+         None
     """
     def __init__(self, task_type: str, **kwargs):
         self.task_type = task_type
@@ -17,12 +17,24 @@ class Packet:
 
 class GamePacket(Packet):
     """
-        GamePackets to handle during a game
-        Acceptable task_types:
+    GamePackets to handle during a game
+    Acceptable task_types:
 
-         - READY: A Client is ready to start a game
-            Additional Data:
-             None
+     - READY: A Client is ready to start a game
+        Additional Data:
+         None
+     - USER: A Client sent the node and is receiving his User
+        Additional Data:
+         - user: The User object of the Client
+     - USER_LOG: The Client logged in and is now receiving his User
+        Additional Data:
+         - user: The User object of the Client
+     - USER_REG: A Client registered a new user and is not receiving his new User
+        Additional Data:
+         - user: The User object of the Client
+     - USER_DUM: A Client requested a Dummy and is now receiving his User
+        Additional Data:
+         - user: The User object of the Client
     """
     def __init__(self, task_type: str, **kwargs):
         super().__init__(task_type, **kwargs)
