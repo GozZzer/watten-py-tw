@@ -4,7 +4,7 @@ from kivy.support import install_twisted_reactor
 from twisted.internet.protocol import connectionDone
 from twisted.python import failure
 
-from watten_py.objects.network import Packet, GamePacket
+from watten_py.objects.network import Packet, GamePacket, UserUpdatePacket
 
 install_twisted_reactor()
 
@@ -15,10 +15,13 @@ class TwistedServerProtocol(protocol.Protocol):
 
     def dataReceived(self, data):
         data = pickle.loads(data)
-        if isinstance(data, Packet):
-            self.factory.app.handle_data(data, self.transport)
+        print("recv:", data)
+        if isinstance(data, UserUpdatePacket):
+            self.factory.app.handle_user_update(data, self.transport)
         elif isinstance(data, GamePacket):
             self.factory.app.handle_game_data(data, self.transport)
+        else:
+            self.factory.app.handle_data(data, self.transport)
 
     def connectionMade(self):
         self.factory.app.on_connection(self.transport)

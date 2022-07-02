@@ -1,7 +1,0 @@
-NODE        Server wants the NODE of a Client
-NODE_R      The Client Sends the node to the Server
-USER        The Client receives the USER from the Server
-USER_REG    The Client receives the USER when he registers
-USER_LOG    The Client receives the USER when he logs in
-LOGOUT      The Client logs out of his current USER
-LOGIN       The Client logs in to a new USER

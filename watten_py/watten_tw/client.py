@@ -28,6 +28,7 @@ class TwistedClientFactory(protocol.ClientFactory):
         self.app = app
 
     def startedConnecting(self, connector):
+        print("connecting started")
         self.app.status = "1"
 
     def clientConnectionLost(self, connector, reason):

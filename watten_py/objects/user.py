@@ -41,32 +41,3 @@ class User:
             return cls(*usr)
         else:
             return None
-
-
-class ServerSideUser(User):
-    def __init__(self, connection, btn, *args, **kwargs):
-        self.connection = connection
-        self.btn = btn
-        self.ready: bool = False
-        self.ready_time: datetime.datetime | None = None
-        super().__init__(*args, **kwargs)
-
-    def __str__(self):
-        return f"<ServerSideClient {self.username}, ready={self.ready}>"
-
-    @classmethod
-    def from_User(cls, client: User, connection, btn):
-        if client is None:
-            return None
-        else:
-            return cls(
-                connection,
-                btn,
-                **client.__dict__
-            )
-
-    def to_User(self):
-        return User(self.user_id, self.username, self.email)
-
-    def send(self, packet: Packet | GamePacket):
-        self.connection.write(pickle.dumps)(packet)

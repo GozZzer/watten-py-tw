@@ -25,6 +25,9 @@ class WattenDatabase:
         except psycopg2.OperationalError:
             pass
 
+    def stop_connection(self):
+        self.connection.close()
+
     def new_user(self, user_id: uuid.UUID, user_name: str, email: str, password: str, dummy: bool = False):
         QUERY_LOGIN = f'INSERT INTO public."LoginData" (user_id, user_name, email, password, dummy) VALUES (%s, %s, %s, crypt(%s, gen_salt(%s)), %s) RETURNING user_id, user_name, email'
         DATA_LOGIN = (user_id, user_name, email, password, "md5", dummy)
@@ -88,10 +91,24 @@ class WattenDatabase:
             else:
                 QUERY += ' AND password = crypt(%s, password)'
             DATA.append(password)
+        if QUERY.endswith('" WHERE'):
+            QUERY += ' NOT connected'
+        else:
+            QUERY += ' AND NOT connected'
         with self.connection.cursor() as curs:
             curs.execute(QUERY, DATA)
             dta = curs.fetchone()
-            return dta if dta else None
+            if dta:
+                curs.execute('UPDATE public."LoginData" SET connected=True WHERE user_id=%s', [dta[0]])
+                self.connection.commit()
+                return dta
+            else:
+                return None
+
+    def disconnect_user(self, user_id: uuid.UUID):
+        with self.connection.cursor() as curs:
+            curs.execute('UPDATE public."LoginData" SET connected=False WHERE user_id=%s', [user_id])
+            self.connection.commit()
 
     def get_player(self, user_id: uuid.UUID):
         QUERY = 'SELECT * FROM public."PlayerData" WHERE user_id=%s'
@@ -99,7 +116,13 @@ class WattenDatabase:
         with self.connection.cursor() as curs:
             curs.execute(QUERY, DATA)
             dta = curs.fetchone()
-            return dta if dta else [None, None, None]
+            if dta:
+                curs.execute('UPDATE public."PlayerData" SET connected_since=now() WHERE user_id=%s RETURNING connected_since', [dta[0]])
+                print(curs.fetchone())
+                self.connection.commit()
+                return dta
+            else:
+                return [None, None, None, None]
 
     def new_set(self, player: list[list[uuid.UUID]]):
         QUERY_SET = 'INSERT INTO public."SetData" (team1_player1, team1_player2, team2_player1, team2_player2) VALUES (%s, %s, %s ,%s) RETURNING set_id'

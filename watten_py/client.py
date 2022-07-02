@@ -16,7 +16,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.textinput import TextInput
 
 from watten_py.objects.user import User
-from watten_py.objects.network import Packet, GamePacket
+from watten_py.objects.network import Packet, GamePacket, UserUpdatePacket
 
 from watten_py.tools.account import check_password, check_username
 
@@ -79,7 +79,7 @@ class MainScreen(Screen):
     def save_dummy_name_user(self, object):
         app = App.get_running_app()
         node = uuid.uuid1()
-        app.send(Packet(task_type="DUMMY", name=object.text, uuid=node))
+        app.send(UserUpdatePacket(task_type="DUMMY", name=object.text, uuid=node))
         self.dummy_popup.dismiss()
         self.started = True
 
@@ -96,7 +96,7 @@ class ProfileScreen(Screen):
 
     def logout(self):
         app = App.get_running_app()
-        app.send(Packet("LOGOUT"))
+        app.send(UserUpdatePacket("LOGOUT"))
         app.user = None
         self.account_name.text = "None"
         self.manager.current = "plogin"
@@ -155,7 +155,7 @@ class LoginScreen(Screen):
             return
 
         app: WattenApp = App.get_running_app()
-        app.send(Packet(task_type="LOGIN", username=username, password=password))
+        app.send(UserUpdatePacket(task_type="LOGIN", username=username, password=password))
 
 
 class RegisterScreen(Screen):
@@ -167,7 +167,7 @@ class RegisterScreen(Screen):
     def register(self):
         app: WattenApp = App.get_running_app()
         uid = uuid.uuid1()
-        app.send(Packet(task_type="REGISTER", username=self.username.text, email=self.email.text, password=self.password.text, uuid=str(uid)))
+        app.send(UserUpdatePacket(task_type="REGISTER", username=self.username.text, email=self.email.text, password=self.password.text, uuid=str(uid)))
 
 
 class WattenApp(App):
@@ -193,9 +193,10 @@ class WattenApp(App):
             self.conn.write(pickle.dumps(data))
 
     def handle_data(self, data: Packet):
+        print("x")
         match data.task_type:
             case "NODE":
-                self.send(Packet(task_type="NODE_R", node=uuid.getnode()))
+                self.send(UserUpdatePacket(task_type="NODE_R", node=uuid.getnode()))
             case "USER":
                 if data.data["user"]:
                     self.user = data.data["user"]
