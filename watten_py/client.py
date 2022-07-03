@@ -245,9 +245,16 @@ class WattenApp(App):
         print(data)
 
     def handle_game_data(self, data: GamePacket):
+        print(data)
         match data.task_type:
-            case "GAMESTART":
+            case "ROUNDSTART":
                 print(data)
+            case "UPD_G":
+                print(data.data["game"])
+            case "TURN":
+                print([f"{data.data['possible']}{c}" for c in data.data["possible"]])
+                i = int(input(f"Choose a card:"))
+                self.send(GamePacket("TURN_C", data.game_id, card=data.data["possible"][i]))
 
     def build(self):
         sm = ScreenManager()

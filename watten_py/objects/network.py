@@ -6,23 +6,6 @@ class Packet:
      - READY: A Client is ready to start a game
         Additional Data:
          None
-    """
-    def __init__(self, task_type: str, **kwargs):
-        self.task_type = task_type
-        self.data = kwargs
-
-    def __str__(self):
-        return f'<Packet task_type: "{self.task_type}">'
-
-
-class GamePacket(Packet):
-    """
-    GamePackets to handle during a game
-    Acceptable task_types:
-
-     - READY: A Client is ready to start a game
-        Additional Data:
-         None
      - USER: A Client sent the node and is receiving his User
         Additional Data:
          - user: The User object of the Client
@@ -37,10 +20,42 @@ class GamePacket(Packet):
          - user: The User object of the Client
     """
     def __init__(self, task_type: str, **kwargs):
+        self.task_type = task_type
+        self.data = kwargs
+
+    def __str__(self):
+        return f'<Packet task_type: "{self.task_type}">'
+
+
+class GamePacket(Packet):
+    """
+    GamePackets to handle during a game
+    Acceptable task_types:
+
+     - GAMESTART: Tell a game that it starts now
+        Additional Data:
+         - game: The current game object
+         - highest: The highest card
+     - TURN: Tell a player that it's his turn
+        Additional Data:
+         - game: The current game object
+         - possible: Cards a player is allowed to play
+     -  TURN_C: A Player got the TURN Packet and returns a card
+        Additional Data:
+         - card: The card object the player played
+     - UPD_G: Tells the client to check update the game view
+        Additional Data:
+         - game: The game object to update the game
+     - SCHENERE: When a user is not happy with his current cards
+        Additional Data:
+         None
+    """
+    def __init__(self, task_type: str, game_id: int = None, **kwargs):
+        self.game_id: int = game_id
         super().__init__(task_type, **kwargs)
 
     def __str__(self):
-        return f'<GamePacket task_type: "{self.task_type}">'
+        return f'<GamePacket[{self.game_id}] task_type: "{self.task_type}" keys: {", ".join(self.data.keys()) if self.data.keys() else None}>'
 
 
 class UserUpdatePacket(Packet):

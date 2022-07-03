@@ -4,9 +4,11 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.uix.stacklayout import StackLayout
 
+from twisted.internet import reactor
+
 from watten_py.objects.game.game import ServerSideSet
 from watten_py.objects.client import Client
-from watten_py.objects.network import Packet
+from watten_py.objects.network import Packet, GamePacket, UserUpdatePacket
 from watten_py.objects.database import WattenDatabase
 from watten_py.watten_tw import sr_reactor, TwistedServerFactory
 
@@ -15,13 +17,16 @@ class WattenServerApp(App):
     layout: StackLayout
     factory: TwistedServerFactory
     database: WattenDatabase
+    reactor: reactor
     connections: list[Client] = []
+    sets: list[ServerSideSet] = []
 
     def build(self):
         self.layout = StackLayout()
         self.database = WattenDatabase()
         self.factory = TwistedServerFactory(self)
-        sr_reactor.listenTCP(5643, self.factory)
+        self.reactor = sr_reactor
+        self.reactor.listenTCP(5643, self.factory)
         return self.layout
 
     def stop(self, *args):
@@ -39,12 +44,20 @@ class WattenServerApp(App):
 
         # print(data)
 
-    def handle_user_update(self, data, transport):
+    def handle_user_update(self, data: UserUpdatePacket, transport):
         client = self.resolve_client(transport)
         client.on_user_update(data, self.database)
 
-    def handle_game_data(self, data, transport):
+    def handle_game_data(self, data: GamePacket, transport):
         client = self.resolve_client(transport)
+        playing_set = self.resolve_set(data)
+        playing_game = playing_set.games[-1]
+        match data.task_type:
+            case "TURN_C":
+                playing_game.recv_card(data.data["card"])
+            case "SCHENERE":
+                if client in [playing_game.game_player_loop[0], playing_game.game_player_loop[3]]:
+                    playing_game.schenere()
 
     def ask_for_game_start(self, ready_player: Client, exec_after):
         ready_clients = [cl for cl in self.connections if cl.player is not None]
@@ -60,8 +73,9 @@ class WattenServerApp(App):
             player = [[game_players[0], game_players[2]], [game_players[1], game_players[3]]]
             Clock.schedule_once(partial(self.game, player))
 
-    def game(self, players: list[list[Client]], exec_after):
+    def game(self, players: list[list[Client]],  exec_after):
         game_set = ServerSideSet.new_set(players, self.database)
+        self.sets.append(game_set)
         Clock.schedule_once(partial(game_set.start_set), 0)
 
     def on_connection(self, transport):
@@ -82,6 +96,11 @@ class WattenServerApp(App):
 
     def resolve_client(self, connection):
         return [cli for cli in self.connections if cli.connection == connection][0]
+
+    def resolve_set(self, data: GamePacket):
+        if data.game_id is not None:
+            return [playing_set for playing_set in self.sets if playing_set.games[-1].game_id == data.game_id][0]
+
 
 
 if __name__ == '__main__':

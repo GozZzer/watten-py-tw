@@ -1,4 +1,5 @@
 import math
+import queue
 import random
 
 from watten_py.tools.game import convert_to_readable
@@ -25,7 +26,7 @@ class CardBase:
     def __eq__(self, other):
         # Checks if a card has the same color as another one
         if isinstance(other, CardBase):
-            if math.floor(int(self) / 8) == math.floor(int(other) / 8):
+            if math.floor(self.col()) == math.floor(other.col()):
                 return True
             else:
                 return False
@@ -40,7 +41,7 @@ class CardBase:
     def __gt__(self, other):
         if isinstance(other, CardBase):
             if other == self:
-                if (int(self) % 8) > (int(other) % 8):
+                if (self.num()) > (other.num()):
                     return True
                 else:
                     return False
@@ -51,7 +52,7 @@ class CardBase:
     def __lt__(self, other):
         if isinstance(other, CardBase):
             if other == self:
-                if (int(self) % 8) < (int(other) % 8):
+                if (self.num()) < (other.num()):
                     return True
                 else:
                     return False
@@ -59,15 +60,41 @@ class CardBase:
         else:
             raise NotImplementedError
 
+    def col(self):
+        if self.card_id == -1:
+            return -1
+        elif self.card_id == 32:
+            return 0
+        else:
+            return round(self.card_id / 8 + 1)
+
+    def num(self):
+        if self.card_id == -1:
+            return -1
+        elif self.card_id == 32:
+            return 0
+        else:
+            return self.card_id % 8 + 1
+
+    @classmethod
+    def new_card(cls, col: int, num: int):
+        if col == -1 and num == -1:
+            return cls(-1)
+        elif col == 0 and num == 0:
+            return cls(32)
+        else:
+            return cls((col - 1) * 8 + num - 1)
+
 
 class CardDek:
-    def __init__(self, cards: list[CardBase]):
+    def __init__(self, cards: list[CardBase], cards_q: queue.Queue):
         """
         Create a new deck of Cards
 
         :param cards: The list of cards a Dek includes
         """
-        self.cards: list = cards
+        self.cards: list[CardBase] = cards
+        self.cards_queue: queue.Queue[CardBase] = cards_q
 
     def __repr__(self):
         return f"<CardDek cards=len({len(self.cards)})>"
@@ -88,7 +115,9 @@ class CardDek:
         :param cards: The amount of cards
         :return: The selected cards
         """
-        tc = self.cards[:cards]
+        tc = []
+        for i in range(cards):
+            tc.append(self.cards_queue.get())
         self.cards = self.cards[cards:]
         return tc
 
@@ -110,4 +139,8 @@ class CardDek:
 
         :return: CardDek object with mixed cards
         """
-        return cls(cards=cls.mix([CardBase(i) for i in range(33)]))
+        cards = cls.mix([CardBase(i) for i in range(33)])
+        q = queue.Queue(maxsize=33)
+        for c in cards:
+            q.put(c)
+        return cls(cards=cards, cards_q=q)
