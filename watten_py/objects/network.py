@@ -24,7 +24,7 @@ class Packet:
         self.data = kwargs
 
     def __str__(self):
-        return f'<Packet task_type: "{self.task_type}">'
+        return f'<Packet task_type: "{self.task_type} keys: {", ".join(self.data.keys()) if self.data.keys() else None}">'
 
 
 class GamePacket(Packet):
@@ -38,9 +38,8 @@ class GamePacket(Packet):
          - highest: The highest card
      - TURN: Tell a player that it's his turn
         Additional Data:
-         - game: The current game object
          - possible: Cards a player is allowed to play
-     -  TURN_C: A Player got the TURN Packet and returns a card
+     - TURN_C: A Player got the TURN Packet and returns a card
         Additional Data:
          - card: The card object the player played
      - UPD_G: Tells the client to check update the game view
@@ -88,4 +87,4 @@ class UserUpdatePacket(Packet):
         super().__init__(task_type, **kwargs)
 
     def __str__(self):
-        return f'<UserUpdatePacket task_type: "{self.task_type}">'
+        return f'<UserUpdatePacket task_type: "{self.task_type} keys: {", ".join(self.data.keys()) if self.data.keys() else None}">'

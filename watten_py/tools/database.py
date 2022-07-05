@@ -22,5 +22,5 @@ class DatabaseAttribute:
 
     def append(self, value):
         with self.connection.cursor() as curs:
-            curs.execute(self.append_query, [value + self.args])
+            curs.execute(self.append_query, [value, self.args])
             self.connection.commit()

@@ -1,6 +1,8 @@
 import pickle
 
 from kivy.uix.button import Button
+from twisted.internet.tcp import Server
+from kivy.logger import Logger
 
 from watten_py.objects.user import User
 from watten_py.objects.game.player import Player
@@ -9,8 +11,9 @@ from watten_py.objects.database import WattenDatabase
 
 
 class Client:
-    def __init__(self, connection, btn: Button):
+    def __init__(self, connection: Server, address, btn: Button):
         self.connection = connection
+        self.address = address
         self.btn = btn
         self.user: User | None = None
         self.player: Player | None = None
@@ -22,10 +25,10 @@ class Client:
         return f"<Client connection: {self.connection}>"
 
     @classmethod
-    def on_connection(cls, transport):
-        host = transport.getHost()
+    def on_connection(cls, connection):
+        host = connection.getHost()
         btn = Button(text=f"{host.host}:{host.port}", width=100, size_hint=(None, 0.15))
-        cli = cls(transport, btn)
+        cli = cls(connection, host, btn)
         return cli, btn
 
     def logout(self, db: WattenDatabase):
@@ -33,7 +36,7 @@ class Client:
             db.disconnect_user(self.user.user_id)
 
     def on_user_update(self, packet: UserUpdatePacket, db: WattenDatabase):
-        print(f"uhdl: {packet}")
+        Logger.info(f"UserUpdate: {packet}")
         match packet.task_type:
             case "NODE_R":
                 self.user = User.get_user_by_node(packet.data["node"], db)
@@ -61,6 +64,16 @@ class Client:
             case _:
                 raise NotImplementedError
 
+    def add_acceptable_game(self, tpe: str):
+        if self.player:
+            self.player.current_acceptable.append(tpe)
+            return True
+        else:
+            return False
+
+    def get_acceptable_game(self):
+        return self.player.current_acceptable if self.player else None
+
     def ready(self, db: WattenDatabase):
         if self.user:
             self.player = Player(self.user.user_id, db)
@@ -74,7 +87,7 @@ class Client:
     def send(self, packet: Packet | GamePacket):
         if self.connection:
             self.connection.write(pickle.dumps(packet))
-            print(f"sent: {packet}")
+            Logger.info(f"Sent: {packet}")
             return True
         else:
             return False

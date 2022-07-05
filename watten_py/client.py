@@ -14,7 +14,10 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.textinput import TextInput
+from kivy.logger import Logger
 
+from watten_py.objects.game.cards import CardBase
+from watten_py.objects.game.game import Game
 from watten_py.objects.user import User
 from watten_py.objects.network import Packet, GamePacket, UserUpdatePacket
 
@@ -48,7 +51,6 @@ class MainScreen(Screen):
         wid = [instance.pos[0], instance.pos[0] + instance.size[0]]
         high = [instance.pos[1], instance.pos[1] + instance.size[1]]
         if wid[0] < motion.pos[0] < wid[1] and high[0] < motion.pos[1] < high[1]:
-            print(instance)
             self.clicked_card = instance
 
     def draw_cards(self):
@@ -183,13 +185,15 @@ class WattenApp(App):
     def on_connection(self, connection):
         print("Connected")
         self.conn = connection
+        Clock.schedule_once(partial(self.send, UserUpdatePacket(task_type="DUMMY", name="dumm", uuid=uuid.uuid1())), 5)
 
     def lost_connection(self, connector, reason):
         self.conn = None
         self.stop()
 
-    def send(self, data: Any):
+    def send(self, data: Any, exec_after=None):
         if self.conn:
+            Logger.info(f"Sent: {data}")
             self.conn.write(pickle.dumps(data))
 
     def handle_data(self, data: Packet):
@@ -241,20 +245,18 @@ class WattenApp(App):
                 registered_popup = Popup(title="Successful", content=Label(text="You are now temporarily named as " + self.user.username),
                                          size_hint=(None, None), size=(dp(400), dp(400)))
                 registered_popup.open()
-
-        print(data)
+                Clock.schedule_once(registered_popup.dismiss, 0)
 
     def handle_game_data(self, data: GamePacket):
-        print(data)
         match data.task_type:
             case "ROUNDSTART":
                 print(data)
             case "UPD_G":
-                print(data.data["game"])
+                pass
             case "TURN":
-                print([f"{data.data['possible']}{c}" for c in data.data["possible"]])
-                i = int(input(f"Choose a card:"))
-                self.send(GamePacket("TURN_C", data.game_id, card=data.data["possible"][i]))
+                self.send(GamePacket("TURN_C", data.game_id, card=random.choice(data.data["possible"])))
+            case "GAMEDONE":
+                self.send(GamePacket("NEXTGAME", data.game_id))
 
     def build(self):
         sm = ScreenManager()

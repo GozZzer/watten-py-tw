@@ -1,6 +1,7 @@
 import itertools
 import random
 import time
+from functools import partial
 
 from kivy.clock import Clock
 
@@ -10,7 +11,6 @@ from watten_py.objects.game.player import Player
 from watten_py.objects.game.cards import CardDek, CardBase
 from watten_py.objects.network import GamePacket, Packet
 from watten_py.tools.database import DatabaseAttribute
-from watten_py.tools.game import convert_to_readable
 
 
 class Game:
@@ -43,9 +43,11 @@ class ServerSideGame:
     game_player_loop: list[Client] | None = None
     round_winner: int = None
     highest: CardBase = None
+    game_winner: list[Client] = []
 
-    def __init__(self, game_id: int, player: list[list[Client]], team1_points: DatabaseAttribute, team2_points: DatabaseAttribute):
+    def __init__(self, game_id: int, game_num: int, player: list[list[Client]], team1_points: DatabaseAttribute, team2_points: DatabaseAttribute):
         self.game_id = game_id
+        self.game_num = game_num
         self.team1_player: list[Client] = player[0]
         self.team2_player: list[Client] = player[1]
         self.team1_points: DatabaseAttribute = team1_points
@@ -53,21 +55,34 @@ class ServerSideGame:
         self.play_card_timeout: int = 10
 
     @classmethod
-    def new_game(cls, game_id: int, player: list[list[Client]], connection):
+    def new_game(cls, game_id: int, player: list[list[Client]], game_num: int, connection):
         return cls(
             game_id,
+            game_num,
             player,
             DatabaseAttribute(connection, "GameData", "team1_points", "game_id=%s", game_id),
             DatabaseAttribute(connection, "GameData", "team2_points", "game_id=%s", game_id)
         )
 
+    def is_done(self):
+        return True if self.game_winner else False
+
     def to_Game(self):
         player = [[cl.player for cl in self.team1_player], [cl.player for cl in self.team2_player]]
         return Game(self.game_id, player, self.team1_points.get(), self.team2_points.get(), self.curr_round)
 
-    def start(self):
-        # self.send_to_game(GamePacket("GAMESTART", game=self.to_Game(), highest=self.highest))
-        for _ in range(5):
+    def next_round(self, exec_after=None):
+        if sum(self.team1_points.get()) >= 11:
+            self.send_to_game(GamePacket("GAMEDONE", self.game_id, winner="team1"))
+            self.game_winner = self.team1_player
+            for cl in self.game_player_loop:
+                cl.add_acceptable_game("NEXTGAME")
+        elif sum(self.team2_points.get()) >= 11:
+            self.send_to_game(GamePacket("GAMEDONE", self.game_id, winner="team2"))
+            self.game_winner = self.team2_player
+            for cl in self.game_player_loop:
+                cl.add_acceptable_game("NEXTGAME")
+        else:
             self.card_dek = CardDek.get_mixed_dek()
             self.update_game_player_loop()
             for card_amount in [3, 2]:
@@ -81,33 +96,14 @@ class ServerSideGame:
             except IndexError: #########################################################################################################sadfasdf
                 pass
             self.send_to_game(GamePacket("ROUNDSTART", self.game_id, game=self.to_Game(), highest=self.highest))
-            self.start_round()
+            Clock.schedule_once(partial(self.next_player, self.game_player_loop[0]), 2)
 
-    def start_round(self):
-        for _ in range(5):
-            for cl in self.game_player_loop:
-                possible = self.get_possible_cards(cl)
-                print(possible)
-                self.send_to(cl, GamePacket("TURN", self.game_id, game=self.to_Game(), possible=possible))
-                if self.play_card_timeout is None:
-                    while len(self.curr_round) != self.game_player_loop.index(cl) + 1:
-                        time.sleep(1)
-                else:
-                    for del_counter in range(self.play_card_timeout):
-                        if len(self.curr_round) != self.game_player_loop.index(cl) + 1:
-                            time.sleep(1)
-                if len(self.curr_round) != self.game_player_loop.index(cl) + 1:
-                    try:
-                        self.curr_round.append(random.choice(possible))
-                    except TypeError:
-                        return
-                    cl.player.cards.pop(cl.player.cards.index(self.curr_round[-1]))
-                else:
-                    cl.player.cards.pop(cl.player.cards.index(self.curr_round[-1]))
-                self.send_to_game(GamePacket("UPD_G", self.game_id, game=self.to_Game()))
-        self.decide_round_winner()
+    def next_player(self, client: Client, exec_after=None):
+        possible = self.get_possible_cards(client)
+        self.send_to(client, GamePacket("TURN", self.game_id, possible=possible))
+        client.add_acceptable_game("TURN_C")
 
-    def decide_round_winner(self):
+    def decide_round_winner(self, exec_after):
         self.round_winner = 0
         for card in self.curr_round[1:]:
             # Card is the highest card
@@ -133,28 +129,30 @@ class ServerSideGame:
                 # Card is a random card
                 else:
                     pass
+        self.round_winner = self.round_winner % 4
+        self.add_points()
+        self.curr_round = []
+        Clock.schedule_once(self.next_round)
 
-    def get_possible_cards(self, cl: Client):
+    def add_points(self):
+        round_winner = self.game_player_loop[self.round_winner]
+        if round_winner in self.team1_player:
+            self.team1_points.append(2)
+        elif round_winner in self.team2_player:
+            self.team2_points.append(2)
+
+    def get_possible_cards(self, cl: Client) -> list[CardBase]:
         cards = cl.player.cards
         if cl in [self.game_player_loop[0], self.game_player_loop[3]]:
             if not self.curr_round:
                 return cards
             if self.highest == self.curr_round[0]:
-                poss_cards = []
-                for card in cards:
-                    if card == self.highest:
-                        poss_cards.append(card)
-                return poss_cards if poss_cards else cards
+                cds = [c for c in cards if c == self.highest]
+                return cds if cds is not None else cards
+            else:
+                return cards
         else:
             return cards
-
-    def wait_for_card_played(self, cl: Client, exec_after):
-        while len(self.curr_round) < self.game_player_loop.index(cl) + 1:
-            pass
-        return True
-
-    def recv_card(self, card: CardBase):
-        print(card)
 
     def schenere(self):
         self.game_player_loop[0].player.cards = []
@@ -171,6 +169,7 @@ class ServerSideGame:
         else:
             if self.round_winner:
                 self.game_player_loop = self.game_player_loop[:self.round_winner] + self.game_player_loop[self.round_winner:]
+        self.game_player_loop = self.game_player_loop[:self.game_num-1] + self.game_player_loop[self.game_num-1:]
 
     def send_to_game(self, packet: Packet | GamePacket):
         for cl in self.team1_player + self.team2_player:
@@ -178,14 +177,15 @@ class ServerSideGame:
 
     @staticmethod
     def send_to(client: Client, packet: Packet | GamePacket):
-        if "game" in packet.data.keys():
+        """if "game" in packet.data.keys():
             sendable = packet.data["game"].to_sendable_game(client.player)
             packet.data["game"]: Game = sendable
             kwargs = packet.data
             del kwargs["game"]
             client.send(GamePacket(packet.task_type, packet.game_id, game=sendable, **kwargs))
         else:
-            client.send(packet)
+            client.send(packet)"""
+        client.send(packet)
 
 
 class ServerSideSet:
@@ -205,7 +205,7 @@ class ServerSideSet:
     @classmethod
     def new_set(cls, player: list[list[Client]], database: WattenDatabase):
         set_id, game_id = database.new_set([list(map(lambda x: x.user.user_id, team)) for team in player])
-        game = ServerSideGame.new_game(game_id, player, database.connection)
+        game = ServerSideGame.new_game(game_id, player, 1, database.connection)
         return cls(
             set_id,
             player,
@@ -214,10 +214,45 @@ class ServerSideSet:
             DatabaseAttribute(database.connection, "SetData", "team2_set_points", "set_id=%s", set_id)
         )
 
-    def start_set(self, exec_after):
-        while self.continue_set:
-            self.games[-1].start()
-            break
+    def start_game(self, exec_after=None):
+        Clock.schedule_once(self.games[-1].next_round)
+
+    def handle_data(self, data: GamePacket, client: Client, db: WattenDatabase, exec_after=None):
+        if data.task_type not in client.get_acceptable_game():
+            return
+        player = client.player
+        match data.task_type:
+            case "TURN_C":
+                if client not in self.games[-1].game_player_loop:
+                    return
+                if data.data["card"] in player.cards:
+                    player.current_acceptable.pop(player.current_acceptable.index("TURN_C"))
+                    player.cards.pop(player.cards.index(data.data["card"]))
+                    self.games[-1].curr_round.append(data.data["card"])
+                    self.games[-1].send_to_game(GamePacket("UPD_G", self.games[-1].game_id, game=self.games[-1].to_Game()))
+                    cur_index = self.games[-1].game_player_loop.index(client)
+                    if cur_index == 3:
+                        Clock.schedule_once(self.games[-1].decide_round_winner)
+                    else:
+                        Clock.schedule_once(partial(self.games[-1].next_player, self.games[-1].game_player_loop[cur_index + 1]), 2)
+                else:
+                    Clock.schedule_once(partial(self.games[-1].next_player, client), 2)
+            case "NEXTGAME":
+                if self.games[-1].is_done():
+                    db.client_won_game(*[cl.user.user_id for cl in self.games[-1].game_winner])
+                    if self.games[-1].game_winner == self.games[-1].team1_player:
+                        self.team1_set_points.append(1)
+                    elif self.games[-1].game_winner == self.games[-1].team2_player:
+                        self.team1_set_points.append(1)
+                    for cl in self.games[-1].game_player_loop:
+                        cl.player.current_acceptable.pop(cl.player.current_acceptable.index("NEXTGAME"))
+                    game_id = db.new_game(self.set_id)
+                    game = ServerSideGame.new_game(game_id, [self.team1, self.team2], len(self.games), db.connection)
+                    self.games.append(game)
+                    self.start_game()
+
+    def close_set(self):
+        self.games[-1].send_to_game(GamePacket("GAMEDONE"))
 
     def send_to_set(self, packet: Packet | GamePacket):
         for cl in self.team1 + self.team2:

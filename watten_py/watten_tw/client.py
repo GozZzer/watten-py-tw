@@ -1,6 +1,7 @@
 import pickle
 
 from kivy.support import install_twisted_reactor
+from kivy.logger import Logger
 
 from watten_py.objects.network import Packet, GamePacket
 
@@ -15,6 +16,7 @@ class TwistedClientProtocol(protocol.Protocol):
 
     def dataReceived(self, data):
         data = pickle.loads(data)
+        Logger.info(f"Received: {data}")
         if isinstance(data, GamePacket):
             self.factory.app.handle_game_data(data)
         elif isinstance(data, Packet):

@@ -66,7 +66,7 @@ class CardBase:
         elif self.card_id == 32:
             return 0
         else:
-            return round(self.card_id / 8 + 1)
+            return math.floor(int(self.card_id)/8) + 1
 
     def num(self):
         if self.card_id == -1:
@@ -74,7 +74,7 @@ class CardBase:
         elif self.card_id == 32:
             return 0
         else:
-            return self.card_id % 8 + 1
+            return (int(self.card_id) % 8) + 1
 
     @classmethod
     def new_card(cls, col: int, num: int):

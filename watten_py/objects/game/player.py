@@ -11,6 +11,7 @@ class Player:
     set_won: int
     cards: list[CardBase] = []
     connected_since: datetime.datetime
+    current_acceptable: list[str] = []
 
     def __init__(self, user_id: uuid.UUID, database: WattenDatabase = None):
         self.player_id: uuid.UUID = user_id
