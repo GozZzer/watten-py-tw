@@ -20,7 +20,7 @@ class WattenDatabase:
                 host=host,
                 port=port
             )
-            print("Connected to database")
+            # print("Connected to database")
             self.connection = connection
         except psycopg2.OperationalError:
             pass
@@ -182,6 +182,22 @@ class WattenDatabase:
             curs.execute(QUERY, DATA)
             dta = curs.fetchone()
             return dta if dta else None
+
+    def client_won_game(self, *user_id: list[uuid.UUID]):
+        QUERY = 'UPDATE public."PlayerData" SET games_won="PlayerData".games_won+1 WHERE user_id=%s'
+        with self.connection.cursor() as curs:
+            for user in user_id:
+                DATA = (user,)
+                curs.execute(QUERY, DATA)
+            self.connection.commit()
+
+    def client_won_set(self, *user_id: list[uuid.UUID]):
+        QUERY = 'UPDATE public."PlayerData" SET sets_won=sets_won+1 WHERE user_id=%s'
+        with self.connection.cursor() as curs:
+            for user in user_id:
+                DATA = (user,)
+                curs.execute(QUERY, DATA)
+            self.connection.commit()
 
 
 #d = WattenDatabase()
